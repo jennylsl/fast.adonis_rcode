@@ -77,7 +77,7 @@ R2.calc<-function( lhs, rhs, weights, nterms, t.AK, num.list, num_orders, SS=FAL
  
   R2_calc_result <- R2.o
   SS.RES <- -t.HA
-  if(SS==TRUE){
+  if(SS==TRUE & nterms==1){
     SS.E <- R2.o*(-1/N*t.AK)
     SS.TO <- sum(SS.E+SS.RES)
     result_r <- list(R2_calc_result,c(SS.E,SS.RES, SS.TO))
@@ -95,7 +95,7 @@ R2.calc<-function( lhs, rhs, weights, nterms, t.AK, num.list, num_orders, SS=FAL
     # then conditional R2
     # nterms<-2
     if(nterms>2){
-      R2.condi.ori<- c(SigSeq.R2[c(1, 2+nterms+1:(nterms-2))],R2.o)
+      R2.condi.ori<- c(SigSeq.R2[c(1, nterms+1:(nterms-2))],R2.o)
     }
     if(nterms==2){
       R2.condi.ori<- c(SigSeq.R2[1],R2.o)
@@ -196,3 +196,4 @@ pern<- function(permutations,n){
   return(p)
 }
 ##
+# head function 
