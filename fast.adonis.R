@@ -23,7 +23,8 @@
 #             The last is the table for formula, RHS ~ B+C+A.
 # by      : 'by=terms' will assess significance for each term (sequentially from first to last). 'by=margin' will assess
 #           the marginal effects of the terms (each marginal term analysis in a model without all other variables)
-# parallel : number of 
+# parallel : number of parallel processes. With parallel = 1 uses ordinary, non-parallel processing. The parallel processing
+#           is done with the parallel package.
 
 `fast.adonis`<-
   function(formula, data=NULL, permutations=999, boot.times= 100, boot.se = "WCB",
@@ -85,7 +86,7 @@
     t.AK <- sum(colSums(lhs*weights)*weights)
     
     ## compute R2
-    R2.original <- R2.calc(lhs, rhs, weights, nterms,ind.col,
+    R2.original <- R2.calc(lhs, rhs, weights, nterms, ind.col,
                            t.AK, num.list, num_orders, SS=TRUE)
     
     ## bootstrap to see its standard derivation
