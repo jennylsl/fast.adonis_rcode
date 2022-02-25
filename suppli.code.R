@@ -28,10 +28,8 @@ R2.select.fun <- function(ind.col, ind.covariate,
   
   return(R2.model)
 }
-# compute R2
-t.AK <- sum(colSums(lhs*weights)*weights)
-#  Sequential coputing: create combination of variables put in the design matrix
 
+#  Sequential computing: create combination of variables put in the design matrix
 num.list_gener <- function(nterms, num_orders = num_orders, order_list = order_list){
   num.list1 <- lapply(1:  nterms, function(i) i)
   num.list2 <- lapply(1:  nterms, function(i) 1:i)[-c(1,nterms)]

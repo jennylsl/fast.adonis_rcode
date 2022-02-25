@@ -1,7 +1,9 @@
-`fast.adonis` <-
+## fast.adonis is a R function that is used for analysis of variance using distance matrices
+# 
+`fast.adonis`<-
   function(formula, data=NULL, permutations=999, boot.times= 100, boot.se = "WCB",
            boot.sample.size= 2000, weights= NULL, num_orders=NULL, order_list=NULL,
-           by="terms"
+           by="terms",...
            )
   {
     # clean parameters
@@ -70,11 +72,14 @@
     ## require R package Vegan
     require(vegan)
     ## we do permutations only when samples do not require weights
+    
     if(permutations>0 & all(weights==1)){
       # generate permutation indicators
       perm_mat <- pern(permutations = permutations,1:n)
+      
       # create R2 perm table
       R2_set_perm <- matrix(NA,permutations,nterms*2)
+      
       # order list for 
       if(!missing(order_list)&!is.null(order_list)){
         R2_add_set_perm <- matrix(NA,num_orders*permutations, nterms-1)}
@@ -95,21 +100,19 @@
       P <- ((rowSums(t(R2_set_perm)-as.vector(R2.original[[1]])>0)+1)/(permutations+1))
       # (rowSums(t(f.perms) >= F.Mod - EPS)+1)/(permutations+1)
 
-    }
-    else { # no permutations
+    } else { # no permutations
        P <- rep(NA, nterms)
     }
     if(nterms==1 & (is.null(num_orders)) ){
-      
       SumsOfSqs <- R2.original[[2]]
       df.Exp <- 1
       df.Res <- n - 1
       F.Mod <- SumsOfSqs[-c(length(SumsOfSqs)-1,length(SumsOfSqs))]/(df.Exp)/(SumsOfSqs[c(length(SumsOfSqs)-1)]/df.Res)
-      R2.t <- R2.original[[1]]
       tab <- data.frame(Df = c(df.Exp, df.Res, n-1),
                         SumsOfSqs = SumsOfSqs,
                         F.Model = c(F.Mod, NA,NA),
                         R2 = SumsOfSqs/SumsOfSqs[length(SumsOfSqs)],
+                        se.R2 = c(SD.Mat,NA, NA),
                         P = c(P, NA, NA))
     }
     if(by=="terms" & nterms>=2 & (is.null(num_orders)) ){
@@ -117,34 +120,46 @@
       df.Exp <- sapply(u.grps[-1], function(i) sum(grps==i) )
       df.Res <- n - qrhs$rank
       F.Mod <- SumsOfSqs[-c(length(SumsOfSqs)-1,length(SumsOfSqs))]/(df.Exp)/(SumsOfSqs[c(length(SumsOfSqs)-1)]/df.Res)
-      R2.t <- R2.original[[1]][c(2,(1+nterms+1:(nterms-1)))]
       tab <- data.frame(Df = c(df.Exp, df.Res, n-1),
                         SumsOfSqs = SumsOfSqs,
                         F.Model = c(F.Mod, NA,NA),
                         R2 = SumsOfSqs/SumsOfSqs[length(SumsOfSqs)],
+                        se.R2 = c(SD.Mat[c(2,(1+nterms+1:(nterms-1)))],NA, NA),
                         P = c(P[c(2,(1+nterms+1:(nterms-1)))], NA, NA))
 
     }
     if(by=="margin" & nterms>=2 & (is.null(num_orders)) ){
-      SumsOfSqs <- R2.original[[2]][c(2:(1+nterms))]
+      SumsOfSqs <- R2.original[[2]][c(2:(1+nterms),(length(R2.original[[2]])-1),length(R2.original[[2]]))]
       df.Exp <- sapply(u.grps[-1], function(i) sum(grps==i) )
       df.Res <- n - qrhs$rank
       F.Mod <- SumsOfSqs[-c(length(SumsOfSqs)-1,length(SumsOfSqs))]/(df.Exp)/(SumsOfSqs[c(length(SumsOfSqs)-1)]/df.Res)
-      R2.t <- R2.original[[1]][c(2:(1+nterms))]
       tab <- data.frame(Df = c(df.Exp, df.Res, n-1),
                         SumsOfSqs = SumsOfSqs,
                         F.Model = c(F.Mod, NA,NA),
                         R2 = SumsOfSqs/SumsOfSqs[length(SumsOfSqs)],
+                        se.R2 = c(SD.Mat[c(2:(1+nterms))],NA,NA),
                         P = c(P[c(2:(1+nterms))], NA, NA))
       
     }
+    
     rownames(tab) <- c(attr(attr(rhs.frame, "terms"), "term.labels")[u.grps],
                        "Residuals", "Total")
     rownames(tab) <- c(attr(attr(rhs.frame, "terms"), "term.labels")[u.grps],
                        "Residuals", "Total")
     colnames(tab)[ncol(tab)] <- "Pr(>F)"
-    attr(tab, "heading") <- c(howHead(attr(p, "control")),
-                              "Terms added sequentially (first to last)\n")
+    if(by=="terms" & all(weights==1)){
+      attr(tab, "heading") <- c(vegan:::howHead(attr(perm_mat, "control")),
+                                "Terms added sequentially (first to last)\n")
+    }
+    if(by=="margin" & all(weights==1)){
+      attr(tab, "heading") <- c(vegan:::howHead(attr(perm_mat, "control")),
+                                "Terms added marginaly (one term for each analysis)\n")
+    }
+    if(any(weights!=1)){
+      attr(tab, "heading") <- c("Weights included (no permutation)")
+    }
+    
+    
     class(tab) <- c("anova", class(tab))
     out <- list(aov.tab = tab, call = match.call(),
                 model.matrix = rhs, terms = Terms)
