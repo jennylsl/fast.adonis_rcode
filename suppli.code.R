@@ -84,7 +84,6 @@ R2.calc<-function( lhs, rhs, weights, nterms,ind.col,
   }
   # R2 computing
   if(nterms>1){
-    order_list
     # sequential 
     # number of groups of variables in one time of boot (p single + p-2 sequential)
     var.total <- length(num.list)
@@ -125,7 +124,7 @@ R2.calc<-function( lhs, rhs, weights, nterms,ind.col,
       if(SS==TRUE){
         SS.E <- c(R2_calc_result*(-1/N*t.AK))
         SS.TO <- sum(SS.E[1]+SS.RES)
-        result_r <- list(R2_calc_result,c(SS.E,SS.RES, SS.TO))
+        result_r <- list(R2_calc_result,c(SS.E, SS.RES, SS.TO))
       }
     }
   }

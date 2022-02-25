@@ -68,7 +68,10 @@
     nterms <- length(u.grps) - 1
     if ( nterms < 1 ){
       stop("right-hand-side of formula has no usable terms")}
-
+    if ( nterms == 1 ){
+      order_list <- num_orders <- NULL
+    }
+    
     n <- nrow(lhs) # sample size
     if ( is.null(boot.sample.size) ){
       boot.sample.size <- n}
@@ -98,12 +101,10 @@
         Ind.matrix <- AS.sample.fun(Ind.matrix, weights, n)}
       if(is.null(num_orders)|is.null(order_list)){
         boot.R2.set <- matrix(NA, boot.times, nterms*2)
-        
       }
       if(!is.null(num_orders)& !is.null(order_list)){
         list.i <- unlist(order_list)
         boot.R2.set <- matrix(NA, boot.times, c(nterms*2+length(list.i)-2))
-        
       }
       boot.dim2 <- ifelse(is.null(num_orders)|is.null(order_list),nterms*2,c(nterms*2+length(list.i)-2))
 
@@ -123,7 +124,6 @@
       }
       SD.Mat <- apply(boot.R2.set, 2, sd)
     }
-
     # Permutations
     ## require R package Vegan
     require(vegan)
@@ -173,15 +173,15 @@
     }
     if ( nterms==1 ){
       SumsOfSqs <- R2.original[[2]]
-      df.Exp <- 1
-      df.Res <- n - 1
+      df.Exp <- sapply(u.grps[-1], function(i) sum(grps==i) )
+      df.Res <- n - qrhs$rank
       F.Mod <- SumsOfSqs[-c(length(SumsOfSqs)-1,length(SumsOfSqs))]/(df.Exp)/(SumsOfSqs[c(length(SumsOfSqs)-1)]/df.Res)
       tab <- data.frame(Df = c(df.Exp, df.Res, n-1),
                         SumsOfSqs = SumsOfSqs,
                         R2 = SumsOfSqs/SumsOfSqs[length(SumsOfSqs)],
-                        se.R2 = c(SD.Mat,NA, NA),
+                        se.R2 = c(SD.Mat[1],NA, NA),
                         F.Model = c(F.Mod, NA,NA),
-                        P = c(P, NA, NA))
+                        P = c(P[1], NA, NA))
     }
     if ( by=="terms" & nterms>=2 & (is.null(num_orders)) ){
       SumsOfSqs <- R2.original[[2]][c(2,(1+nterms+1:(nterms-1)),(length(R2.original[[2]])-1),length(R2.original[[2]]))]
@@ -210,19 +210,35 @@
       
     }
     if ( by=="terms" & nterms>=2 & (!is.null(num_orders)) & (!is.null(order_list))){
-      SumsOfSqs1 <- R2.original[[2]][c(2,(1+nterms+1:(nterms-1)),(length(R2.original[[2]])-1),length(R2.original[[2]]))]
-      df.Exp1 <- sapply(u.grps[-1], function(i) sum(grps==i) )
+      SumsOfSqs <- R2.original[[2]][c(2,(1+nterms+1:(nterms-1)),(length(R2.original[[2]])-1),length(R2.original[[2]]))]
+      df.Exp <- sapply(u.grps[-1], function(i) sum(grps==i) )
       df.Res <- n - qrhs$rank
-      F.Mod1 <- SumsOfSqs1[-c(length(SumsOfSqs1)-1,length(SumsOfSqs1))]/(df.Exp1)/(SumsOfSqs1[c(length(SumsOfSqs1)-1)]/df.Res)
-      tab1 <- data.frame(Df = c(df.Exp1, df.Res, n-1),
-                        SumsOfSqs = SumsOfSqs1,
-                        R2 = SumsOfSqs1/SumsOfSqs1[length(SumsOfSqs1)],
+      F.Mod <- SumsOfSqs[-c(length(SumsOfSqs)-1,length(SumsOfSqs))]/(df.Exp)/(SumsOfSqs[c(length(SumsOfSqs)-1)]/df.Res)
+      tab <- data.frame(Df = c(df.Exp, df.Res, n-1),
+                        SumsOfSqs = SumsOfSqs,
+                        R2 = SumsOfSqs/SumsOfSqs[length(SumsOfSqs)],
                         se.R2 = c(SD.Mat[c(2,(1+nterms+1:(nterms-1)))],NA, NA),
-                        F.Model = c(F.Mod1, NA,NA),
+                        F.Model = c(F.Mod, NA,NA),
                         P = c(P[c(2,(1+nterms+1:(nterms-1)))], NA, NA))
+      tab1 <- list(tab)
       for(ind_orders_tab in 1:num_orders){
-        
-      }
+        # ind_orders_tab<-1
+        orders <- order_list[[ind_orders_tab]]
+        SumsOfSqs.ad <- R2.original[[2]][c(orders[1]+1,(2*nterms+1:(nterms-1)+(ind_orders_tab-1)*(nterms-1)),(length(R2.original[[2]])-1),length(R2.original[[2]]))]
+        df.Exp.ad <- sapply(u.grps[-1], function(i) sum(grps==i) )[orders]
+        F.Mod.ad <- SumsOfSqs.ad[-c(length(SumsOfSqs.ad)-1,length(SumsOfSqs.ad))]/(df.Exp.ad)/(SumsOfSqs.ad[c(length(SumsOfSqs.ad)-1)]/df.Res)
+        tab.ad <- data.frame(Df = c(df.Exp.ad, df.Res, n-1),
+                           SumsOfSqs = SumsOfSqs.ad,
+                           R2 = SumsOfSqs.ad/SumsOfSqs.ad[length(SumsOfSqs.ad)],
+                           se.R2 = c(SD.Mat[c(orders[1]+1,(2*nterms+1:(nterms-1)+(ind_orders_tab-1)*(nterms-1)))],NA, NA),
+                           F.Model = c(F.Mod.ad, NA,NA),
+                           P = c(P[c(orders[1]+1,(2*nterms+1:(nterms-1)+(ind_orders_tab-1)*(nterms-1)))], NA, NA))
+        rownames(tab.ad) <- c(attr(attr(rhs.frame, "terms"), "term.labels")[u.grps][orders],
+                           "Residuals", "Total")
+        colnames(tab.ad)[ncol(tab.ad)] <- "Pr(>F)"
+        tab1 <- c(tab1,list(tab.ad))
+        }
+      tab1<- tab1[-1]
       
     }
     
@@ -244,8 +260,13 @@
     class(tab) <- c("anova", class(tab))
     out <- list(aov.tab = tab, call = match.call(),
                 model.matrix = rhs, terms = Terms)
+    if((!is.null(num_orders)) & (!is.null(order_list))){
+      out <- list(aov.tab = tab, call = match.call(),
+                  model.matrix = rhs, terms = Terms,tab.add=tab1)
+    }
+    
     class(out) <- "fast.adonis"
     out
-    aa<- cbind(out,out)
+    
   }
 
