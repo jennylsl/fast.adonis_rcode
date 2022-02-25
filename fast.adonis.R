@@ -59,7 +59,8 @@
     t.AK <- sum(colSums(lhs*weights)*weights)
     
     ## compute R2
-    R2.original <- R2.calc(lhs, rhs, weights, nterms, t.AK, num.list, num_orders, SS=TRUE)
+    R2.original <- R2.calc(lhs, rhs, weights, nterms,ind.col,
+                           t.AK, num.list, num_orders, SS=TRUE)
     
     ## bootstrap to see its standard derivation
     if ( !is.null( boot.times) ){
@@ -73,11 +74,11 @@
       # parallel computing
       if ( isParal && isMulticore ){
         boot.R2.set <- unlist(mclapply(1:boot.times,function(ind_boot){
-          boot.fun(ind_boot, weights, rhs, lhs)},
+          boot.fun(ind_boot, weights, rhs, lhs, ind.col)},
           mc.cores = parallel))
       }else {
         for( ind.boot in 1:boot.times ){
-          boot.R2.set[ind.boot,] <- boot.fun(ind.boot, weights, rhs, lhs)}
+          boot.R2.set[ind.boot,] <- boot.fun(ind.boot, weights, rhs, lhs, ind.col)}
       }
       SD.Mat <- apply(boot.R2.set, 2, sd)
     }
@@ -102,7 +103,7 @@
           lhs.perm<- lhs[permut.ind,permut.ind]
           weights.perm <- rep(1,n)
           
-          R2.calc(lhs.perm, rhs, weights.perm, nterms, t.AK, num.list, num_orders)},
+          R2.calc(lhs.perm, rhs, weights.perm, ind.col, nterms, t.AK, num.list, num_orders)},
           mc.cores = parallel))
       }else{ # create R2 perm table
         for( ind_perm in 1:permutations ){
@@ -111,7 +112,8 @@
           lhs.perm<- lhs[permut.ind,permut.ind]
           weights.perm <- rep(1,n)
           
-          R2_set_perm[ind_perm,] <- R2.calc(lhs.perm, rhs, weights.perm, nterms, t.AK, num.list, num_orders)
+          R2_set_perm[ind_perm,] <- R2.calc(lhs.perm, rhs, weights.perm, ind.col,
+                                            nterms, t.AK, num.list, num_orders)
         }
         perm_return <- list(R2_set_perm)
         # p values
@@ -161,8 +163,6 @@
       
     }
     
-    rownames(tab) <- c(attr(attr(rhs.frame, "terms"), "term.labels")[u.grps],
-                       "Residuals", "Total")
     rownames(tab) <- c(attr(attr(rhs.frame, "terms"), "term.labels")[u.grps],
                        "Residuals", "Total")
     colnames(tab)[ncol(tab)] <- "Pr(>F)"
