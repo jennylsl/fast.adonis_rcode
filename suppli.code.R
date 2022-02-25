@@ -165,6 +165,8 @@ AS.sample.fun <- function(IND.matrix, weights, n){
   }))
   return(IND.o.matrix)
 }
+
+# bootstrap 
 boot.fun <- function(ind.boot, weights, rhs, lhs, ind.col, Ind.matrix,
                      nterms, num.list, num_orders){
   # ind.boot=1
