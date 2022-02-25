@@ -47,7 +47,7 @@ num.list_gener <- function(nterms, num_orders = num_orders, order_list = order_l
   }
   return(num.list)
 }
-R2.calc<-function( lhs, rhs, weights, nterms, t.AK, num.list, num_orders, SS=FALSE){
+R2.calc<-function( lhs, rhs, weights, nterms,ind.col, t.AK, num.list, num_orders, SS=FALSE){
   
   # weights
   # rhs = X
@@ -162,7 +162,7 @@ AS.sample.fun <- function(IND.matrix, weights, n){
   }))
   return(IND.o.matrix)
 }
-boot.fun <- function(ind.boot, weights, rhs, lhs){
+boot.fun <- function(ind.boot, weights, rhs, lhs, ind.col){
   # ind.boot=1
   ind.temp.o <- Ind.matrix[ind.boot,]
   
@@ -180,12 +180,14 @@ boot.fun <- function(ind.boot, weights, rhs, lhs){
   # boot rhs 
   rhs.boot <- as.matrix(rhs)[ind.temp,]
   rhs.boot <- rhs.boot[,X.check.func(rhs.boot)]
+  ind.col.boot<- ind.col[X.check.func(rhs.boot)[-1]]
   
   # check the singularity of boot design matrix
   invisible(tryCatch(solve(t(rhs.boot)%*%rhs.boot),
            error = function(e) {print("failed boot samples")}))
   t.AK.boot <- sum(colSums(lhs.boot*weights.boot)*weights.boot)
-  boot.R2 <- R2.calc(lhs.boot, rhs.boot, weights.boot, nterms, t.AK.boot, num.list, num_orders)
+  boot.R2 <- R2.calc(lhs.boot, rhs.boot, weights.boot, ind.col.boot,
+                     nterms, t.AK.boot, num.list, num_orders)
   return(boot.R2)
 }
 # generate permutation table
