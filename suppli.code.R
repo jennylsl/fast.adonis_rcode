@@ -38,7 +38,7 @@ num.list_gener <- function(nterms, num_orders = num_orders, order_list = order_l
   # if there are additional orders
   if(!is.null(num_orders)){
     for(ind_order in 1:num_orders){
-      # ind_order<-2
+      # ind_order<-1
       num.list.temp <- lapply(1: nterms, function(i)order_list[[ind_order]][1:i])[-c(1,nterms)]
       # create new lists
       assign(paste0("num.list",(ind_order+2)),num.list.temp)
@@ -47,13 +47,14 @@ num.list_gener <- function(nterms, num_orders = num_orders, order_list = order_l
   }
   return(num.list)
 }
-R2.calc<-function( lhs, rhs, weights, nterms,ind.col, t.AK, num.list, num_orders, SS=FALSE){
+R2.calc<-function( lhs, rhs, weights, nterms,ind.col,
+                   t.AK, num.list, num_orders, SS=FALSE){
   
   # weights
   # rhs = X
   # lhs = A
   N <-  sum(weights)
-
+  
   ## SSR
   # H=X(X^tX)^{-1}X^t
   # H.p=X(X^tX)^{-1}
@@ -72,7 +73,7 @@ R2.calc<-function( lhs, rhs, weights, nterms,ind.col, t.AK, num.list, num_orders
   # R^2 = SSR/SSTO
   R2.o <- (t.HA-1/N*t.AK)/(-1/N*t.AK)
   
- 
+  
   R2_calc_result <- R2.o
   SS.RES <- -t.HA
   if(SS==TRUE & nterms==1){
@@ -82,6 +83,7 @@ R2.calc<-function( lhs, rhs, weights, nterms,ind.col, t.AK, num.list, num_orders
   }
   # R2 computing
   if(nterms>1){
+    order_list
     # sequential 
     # number of groups of variables in one time of boot (p single + p-2 sequential)
     var.total <- length(num.list)
@@ -111,14 +113,14 @@ R2.calc<-function( lhs, rhs, weights, nterms,ind.col, t.AK, num.list, num_orders
     if(!is.null(num_orders)){
       R2_add_set <- matrix(NA, num_orders, nterms-1)
       for(ind_order in 1:num_orders){
-        # ind_order<-2
+        # ind_order<-1
         R2_condi_add <- numeric(nterms)
         R2_condi_add[1] <- unlist( R2.single.boot)[order_list[[ind_order]][1]]
-        R2_condi_add[-c(1,(nterms))]<-  unlist( R2.single.boot)[(2*nterms-1+(ind_order-1)*(nterms-2)):(3*nterms+(ind_order-1)*(nterms-2))]
-        R2_condi_add[(nterms)]<- SigSeq.R2[1]
+        R2_condi_add[-c(1,(nterms))]<-  unlist( R2.single.boot)[(2*nterms-1+(ind_order-1)*(nterms-2)):(2*nterms-2+(ind_order)*(nterms-2))]
+        R2_condi_add[(nterms)]<- R2.o
         R2_add_set[ind_order,]<- R2_condi_add[-1]-R2_condi_add[-length(R2_condi_add)]
       }
-      R2_calc_result <- list(R2_calc_result, c(t(R2_add_set)))
+      R2_calc_result <- c(R2_calc_result, c(t(R2_add_set)))
       if(SS==TRUE){
         SS.E <- c(R2_calc_result*(-1/N*t.AK))
         SS.TO <- sum(SS.E[1]+SS.RES)
@@ -126,9 +128,9 @@ R2.calc<-function( lhs, rhs, weights, nterms,ind.col, t.AK, num.list, num_orders
       }
     }
   }
- if(SS==FALSE){
-   return(R2_calc_result)
- }
+  if(SS==FALSE){
+    return(R2_calc_result)
+  }
   if(SS==TRUE){
     return(result_r)
   }
@@ -162,7 +164,8 @@ AS.sample.fun <- function(IND.matrix, weights, n){
   }))
   return(IND.o.matrix)
 }
-boot.fun <- function(ind.boot, weights, rhs, lhs, ind.col){
+boot.fun <- function(ind.boot, weights, rhs, lhs, ind.col, Ind.matrix,
+                     nterms, num.list, num_orders){
   # ind.boot=1
   ind.temp.o <- Ind.matrix[ind.boot,]
   
@@ -179,15 +182,17 @@ boot.fun <- function(ind.boot, weights, rhs, lhs, ind.col){
   
   # boot rhs 
   rhs.boot <- as.matrix(rhs)[ind.temp,]
-  rhs.boot <- rhs.boot[,X.check.func(rhs.boot)]
-  ind.col.boot<- ind.col[X.check.func(rhs.boot)[-1]]
+  delete.id<- X.check.func(rhs.boot)
+  rhs.boot <- rhs.boot[,delete.id]
+  ind.col.boot <- ind.col[delete.id[-1]]
   
   # check the singularity of boot design matrix
   invisible(tryCatch(solve(t(rhs.boot)%*%rhs.boot),
            error = function(e) {print("failed boot samples")}))
   t.AK.boot <- sum(colSums(lhs.boot*weights.boot)*weights.boot)
-  boot.R2 <- R2.calc(lhs.boot, rhs.boot, weights.boot, ind.col.boot,
-                     nterms, t.AK.boot, num.list, num_orders)
+  boot.R2 <- R2.calc(lhs.boot, rhs.boot, weights.boot, nterms,
+                     ind.col.boot, t.AK.boot, num.list, num_orders)
+
   return(boot.R2)
 }
 # generate permutation table
