@@ -151,5 +151,4 @@
     class(out) <- "fast.adonis"
     out
   }
-fit2 <- fast.adonis(A ~ alcohol_dpd + race7_new, data=X, permutations = 9,boot.times = 10,by="terms")
 
