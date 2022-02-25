@@ -47,6 +47,7 @@ num.list_gener <- function(nterms, num_orders = num_orders, order_list = order_l
   }
   return(num.list)
 }
+# compute R2
 R2.calc<-function( lhs, rhs, weights, nterms,ind.col,
                    t.AK, num.list, num_orders, SS=FALSE){
   
