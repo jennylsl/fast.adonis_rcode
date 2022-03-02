@@ -33,21 +33,6 @@
            by="terms", parallel = getOption("mc.cores")
   )
   {
-    # A<- -0.5*as.matrix(vegdist(dune))^2
-    # formula <- A~Management+A1+Moisture
-    # 
-    # permutations=1
-    # boot.times= 10
-    # boot.se = "WCB"
-    # weights=NULL
-    # boot.sample.size<- NULL
-    # num_orders=NULL
-    # order_list=NULL
-    # by="terms"
-    # data <- dune.env
-    # parallel = getOption("mc.cores")
-    # weights <- rep(c(1:4),5)
-    set.seed(10010)
     source("suppli.code.R")
     
     if ( !is.null(by) ){
