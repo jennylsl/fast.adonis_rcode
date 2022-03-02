@@ -6,14 +6,14 @@ source("fast.adonis.R")
 
 # no weights
 # create a distance matrix
-dim<- 4
+dim <- 5
 D <- dist(matrix(rnorm(10^dim*2), ncol=10))
 # transform to A
 A <- -0.5*as.matrix(D)^2
 # dim(A)
-# D<- NULL
+# D <- NULL
 # create a matrix for independent variables
-X<- data.frame(matrix(rnorm(10^dim*2), ncol=10))
+X <- data.frame(matrix(rnorm(10^dim*2), ncol=10))
 # fast adonis
 fit1 <- fast.adonis(A ~ X1, data=X,permutations = 50,boot.times = 10)
 
