@@ -1,5 +1,5 @@
 # other functions
-# check the sigularity of design matrix
+# check the singularity of design matrix
 X.check.func <- function(X){
   X.boot.check <- apply(as.matrix(X[,-1]), 2, function(vec){
     length(unique(vec))>1
@@ -7,11 +7,11 @@ X.check.func <- function(X){
   X.boot.check <- c(1,as.numeric(X.boot.check))==1
   return(X.boot.check)
 }
+
 # compute the conditional R2 sequentially
 R2.select.fun <- function(ind.col, ind.covariate,
                           rhs, H.p2A, t.AK, weights, N){
   # if cleaned bootstrap sample do not contain specified varaibles
-  # ind.covariate <- c(1)
   if(all(!ind.covariate %in% ind.col)){
     R2.model <- NA
     # warnings: this time of bootstrap failed
@@ -31,15 +31,16 @@ R2.select.fun <- function(ind.col, ind.covariate,
 
 #  Sequential computing: create combination of variables put in the design matrix
 num.list_gener <- function(nterms, num_orders = num_orders, order_list = order_list){
-  num.list1 <- lapply(1:  nterms, function(i) i)
+  num.list0 <- list(1)
+  num.list1 <- lapply(1:  nterms, function(i) (1:nterms)[-i])[-nterms]
   num.list2 <- lapply(1:  nterms, function(i) 1:i)[-c(1,nterms)]
-  num.list <- c(num.list1,num.list2)
+  num.list <- c(num.list0,num.list1,num.list2)
   
   # if there are additional orders
   if(!is.null(num_orders)){
     for(ind_order in 1:num_orders){
       # ind_order<-1
-      num.list.temp <- lapply(1: nterms, function(i)order_list[[ind_order]][1:i])[-c(1,nterms)]
+      num.list.temp <- lapply(1: nterms, function(i)order_list[[ind_order]][1:i])[-c(nterms)]
       # create new lists
       assign(paste0("num.list",(ind_order+2)),num.list.temp)
       num.list <- c(num.list,eval(parse(text=paste0("num.list",ind_order+2))))
@@ -48,7 +49,7 @@ num.list_gener <- function(nterms, num_orders = num_orders, order_list = order_l
   return(num.list)
 }
 # compute R2
-R2.calc<-function( lhs, rhs, weights, nterms,ind.col,
+R2.calc<-function( lhs, rhs, weights, nterms, ind.col,
                    t.AK, num.list, num_orders, SS=FALSE){
   
   # weights
@@ -74,14 +75,15 @@ R2.calc<-function( lhs, rhs, weights, nterms,ind.col,
   # R^2 = SSR/SSTO
   R2.o <- (t.HA-1/N*t.AK)/(-1/N*t.AK)
   
-  
-  R2_calc_result <- R2.o
+  R2_calc_result <- rep(R2.o,2)
   SS.RES <- -t.HA
+  SS.TO <- sum(R2.o*(-1/N*t.AK)+SS.RES)
+  
   if(SS==TRUE & nterms==1){
     SS.E <- R2.o*(-1/N*t.AK)
-    SS.TO <- sum(SS.E+SS.RES)
-    result_r <- list(R2_calc_result,c(SS.E,SS.RES, SS.TO))
+    result_r <- list(c(R2_calc_result,R2_calc_result),c(SS.E,SS.E,SS.RES, SS.TO))
   }
+  
   # R2 computing
   if(nterms>1){
     # sequential 
@@ -92,8 +94,8 @@ R2.calc<-function( lhs, rhs, weights, nterms,ind.col,
       R2.model <- R2.select.fun(ind.col, ind.list, rhs, H.p2A, t.AK, weights, N)
     } )
     SigSeq.R2 <- unlist( R2.single.boot)[1:(nterms*2-2)]
+    
     # then conditional R2
-    # nterms<-2
     if(nterms>2){
       R2.condi.ori<- c(SigSeq.R2[c(1, nterms+1:(nterms-2))],R2.o)
     }
@@ -102,28 +104,26 @@ R2.calc<-function( lhs, rhs, weights, nterms,ind.col,
     }
     R2_condi_all_set <- R2.condi.ori[-1]-R2.condi.ori[-length(R2.condi.ori)]
     
-    # return result if no addtional orders
+    # return result if no additional orders
     ## total R2, marginal R2 for each variables from rhs, sequential R2
-    R2_calc_result <- c(R2.o, SigSeq.R2[1:nterms], R2_condi_all_set)
+    R2_calc_result <- c(R2.o, SigSeq.R2[1], R2.o-SigSeq.R2[2:nterms], R2_condi_all_set)
     if(SS==TRUE){
       SS.E <- c(R2_calc_result*(-1/N*t.AK))
-      SS.TO <- sum(SS.E[1]+SS.RES)
       result_r <- list(R2_calc_result,c(SS.E,SS.RES, SS.TO))
     }
     if(!is.null(num_orders)){
-      R2_add_set <- matrix(NA, num_orders, nterms-1)
+      R2_add_set <- matrix(NA, num_orders, nterms)
       for(ind_order in 1:num_orders){
         # ind_order<-1
-        R2_condi_add <- numeric(nterms)
-        R2_condi_add[1] <- unlist( R2.single.boot)[order_list[[ind_order]][1]]
-        R2_condi_add[-c(1,(nterms))]<-  unlist( R2.single.boot)[(2*nterms-1+(ind_order-1)*(nterms-2)):(2*nterms-2+(ind_order)*(nterms-2))]
-        R2_condi_add[(nterms)]<- R2.o
-        R2_add_set[ind_order,]<- R2_condi_add[-1]-R2_condi_add[-length(R2_condi_add)]
+        R2_condi_add <- numeric(nterms+1)
+        R2_condi_add[2] <- unlist( R2.single.boot)[c(nterms*2-1+(ind_order-1)*(nterms-1))]
+        R2_condi_add[-c(1:2,(nterms+1))]<-  unlist( R2.single.boot)[(2*nterms+(ind_order-1)*(nterms-1)):(2*nterms-1+nterms-2+(ind_order-1)*(nterms-1))]
+        R2_condi_add[(nterms+1)]<- R2.o
+        R2_add_set[ind_order,]<- R2_condi_add[-1]-R2_condi_add[-(nterms+1)]
       }
       R2_calc_result <- c(R2_calc_result, c(t(R2_add_set)))
       if(SS==TRUE){
         SS.E <- c(R2_calc_result*(-1/N*t.AK))
-        SS.TO <- sum(SS.E[1]+SS.RES)
         result_r <- list(R2_calc_result,c(SS.E, SS.RES, SS.TO))
       }
     }
