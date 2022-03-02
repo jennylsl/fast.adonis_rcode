@@ -15,10 +15,10 @@ A <- -0.5*as.matrix(D)^2
 # create a matrix for independent variables
 X <- data.frame(matrix(rnorm(10^dim*2), ncol=10))
 # fast adonis
-fit1 <- fast.adonis(A ~ X1, data=X,permutations = 50,boot.times = 10)
+fit1 <- fast.adonis(A ~ X1, data=X, permutations = 50, boot.times = 10)
 
 # with weights
 weights <- abs(rnorm(dim(A)[1]))
-fit2 <- fast.adonis(A~X1, data=X,permutations = 50, boot.times = 10, weights = weights)
+fit2 <- fast.adonis(A ~ X1, data=X, permutations = 50, boot.times = 10, weights = weights)
 
 
