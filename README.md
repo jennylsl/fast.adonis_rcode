@@ -5,3 +5,16 @@ This code generates results consistent with adonis/adonis2 but much faster. For 
 
 ## packages required
 R package "vegan" "parallel"
+## Installation ##
+
+
+### devtools ###
+
+
+From an interactive R session:
+
+```{r, eval=FALSE}
+library(devtools)
+install_github("jennylsl/fast.adonis")
+library(SpiecEasi)
+```
